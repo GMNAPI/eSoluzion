@@ -1,4 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
 import Exercise1 from './Exercise1'
 
 describe('Exercise1', () => {
@@ -25,6 +27,14 @@ describe('Exercise1', () => {
     render(<Exercise1 />)
     await waitFor(() => {
       expect(screen.getByDisplayValue('100')).toBeInTheDocument()
+    })
+  })
+
+  it('shows error message when API fails', async () => {
+    server.use(http.get('/api/range', () => HttpResponse.error()))
+    render(<Exercise1 />)
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument()
     })
   })
 })

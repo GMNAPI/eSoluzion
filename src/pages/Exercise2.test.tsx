@@ -1,4 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
 import Exercise2 from './Exercise2'
 
 describe('Exercise2', () => {
@@ -32,5 +34,13 @@ describe('Exercise2', () => {
     render(<Exercise2 />)
     await waitFor(() => screen.getByText(/1\.99/))
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('shows error message when API fails', async () => {
+    server.use(http.get('/api/range-fixed', () => HttpResponse.error()))
+    render(<Exercise2 />)
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument()
+    })
   })
 })
