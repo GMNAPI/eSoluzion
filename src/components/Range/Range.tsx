@@ -146,14 +146,18 @@ function FixedRange({ values, trackRef }: FixedRangeInternalProps) {
   const [maxIndex, setMaxIndex] = useState(values.length - 1)
 
   const toPercent = (index: number) => (index / (values.length - 1)) * 100
-  const snapIndex = (pct: number) => Math.round(pct * (values.length - 1))
+
+  const snapIndex = useCallback(
+    (pct: number) => Math.round(pct * (values.length - 1)),
+    [values.length]
+  )
 
   const handleMinDrag = useCallback(
     (pct: number) => {
       const idx = Math.max(0, Math.min(snapIndex(pct), maxIndex - 1))
       setMinIndex(idx)
     },
-    [maxIndex, values.length] // eslint-disable-line react-hooks/exhaustive-deps
+    [snapIndex, maxIndex]
   )
 
   const handleMaxDrag = useCallback(
@@ -161,7 +165,7 @@ function FixedRange({ values, trackRef }: FixedRangeInternalProps) {
       const idx = Math.max(minIndex + 1, Math.min(snapIndex(pct), values.length - 1))
       setMaxIndex(idx)
     },
-    [minIndex, values.length] // eslint-disable-line react-hooks/exhaustive-deps
+    [snapIndex, minIndex, values.length]
   )
 
   const { isDragging: minDragging, onMouseDown: minMouseDown } = useRangeDrag(trackRef, handleMinDrag)
