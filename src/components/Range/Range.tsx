@@ -60,8 +60,8 @@ function NormalRange({ min, max, trackRef }: NormalRangeInternalProps) {
     [min, max, minVal]
   )
 
-  const { isDragging: minDragging, onMouseDown: minMouseDown } = useRangeDrag(trackRef, handleMinDrag)
-  const { isDragging: maxDragging, onMouseDown: maxMouseDown } = useRangeDrag(trackRef, handleMaxDrag)
+  const { isDragging: minDragging, onMouseDown: minMouseDown, onTouchStart: minTouchStart } = useRangeDrag(trackRef, handleMinDrag)
+  const { isDragging: maxDragging, onMouseDown: maxMouseDown, onTouchStart: maxTouchStart } = useRangeDrag(trackRef, handleMaxDrag)
 
   function commitMin() {
     const parsed = parseFloat(minInput)
@@ -107,6 +107,7 @@ function NormalRange({ min, max, trackRef }: NormalRangeInternalProps) {
           className={`${styles.bullet} ${minDragging ? styles.bulletDragging : ''}`}
           style={{ left: `${toPercent(minVal)}%` }}
           onMouseDown={minMouseDown}
+          onTouchStart={minTouchStart}
         />
         <div
           role="slider"
@@ -117,6 +118,7 @@ function NormalRange({ min, max, trackRef }: NormalRangeInternalProps) {
           className={`${styles.bullet} ${maxDragging ? styles.bulletDragging : ''}`}
           style={{ left: `${toPercent(maxVal)}%` }}
           onMouseDown={maxMouseDown}
+          onTouchStart={maxTouchStart}
         />
       </div>
 
@@ -168,8 +170,8 @@ function FixedRange({ values, trackRef }: FixedRangeInternalProps) {
     [snapIndex, minIndex, values.length]
   )
 
-  const { isDragging: minDragging, onMouseDown: minMouseDown } = useRangeDrag(trackRef, handleMinDrag)
-  const { isDragging: maxDragging, onMouseDown: maxMouseDown } = useRangeDrag(trackRef, handleMaxDrag)
+  const { isDragging: minDragging, onMouseDown: minMouseDown, onTouchStart: minTouchStart } = useRangeDrag(trackRef, handleMinDrag)
+  const { isDragging: maxDragging, onMouseDown: maxMouseDown, onTouchStart: maxTouchStart } = useRangeDrag(trackRef, handleMaxDrag)
 
   return (
     <div className={styles.wrapper}>
@@ -192,6 +194,7 @@ function FixedRange({ values, trackRef }: FixedRangeInternalProps) {
           className={`${styles.bullet} ${minDragging ? styles.bulletDragging : ''}`}
           style={{ left: `${toPercent(minIndex)}%` }}
           onMouseDown={minMouseDown}
+          onTouchStart={minTouchStart}
         />
         <div
           role="slider"
@@ -202,6 +205,7 @@ function FixedRange({ values, trackRef }: FixedRangeInternalProps) {
           className={`${styles.bullet} ${maxDragging ? styles.bulletDragging : ''}`}
           style={{ left: `${toPercent(maxIndex)}%` }}
           onMouseDown={maxMouseDown}
+          onTouchStart={maxTouchStart}
         />
       </div>
 
