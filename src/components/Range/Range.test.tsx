@@ -1,6 +1,25 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { axe } from 'jest-axe'
 import { Range } from './Range'
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function mockTrackRect(width = 200, left = 0) {
+  const track = document.querySelector('[class*="trackOuter"]') as HTMLElement
+  vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
+    left,
+    width,
+    right: left + width,
+    top: 0,
+    bottom: 20,
+    height: 20,
+    x: left,
+    y: 0,
+    toJSON: () => ({}),
+  })
+  return track
+}
 
 describe('Range — normal mode', () => {
   it('renders min and max currency labels', () => {
@@ -95,5 +114,107 @@ describe('Range — fixed mode', () => {
     render(<Range mode="fixed" values={values} />)
     const [minBullet] = screen.getAllByRole('slider')
     expect(minBullet).toHaveAttribute('aria-valuenow', '1.99')
+  })
+})
+
+describe('Range — keyboard navigation', () => {
+  it('ArrowRight increments min bullet by 1 in normal mode', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    const [minBullet] = screen.getAllByRole('slider')
+    fireEvent.keyDown(minBullet, { key: 'ArrowRight' })
+    expect(minBullet).toHaveAttribute('aria-valuenow', '2')
+  })
+
+  it('ArrowLeft does not move min bullet below min bound', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    const [minBullet] = screen.getAllByRole('slider')
+    fireEvent.keyDown(minBullet, { key: 'ArrowLeft' })
+    expect(minBullet).toHaveAttribute('aria-valuenow', '1')
+  })
+
+  it('ArrowLeft decrements max bullet by 1 in normal mode', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    const [, maxBullet] = screen.getAllByRole('slider')
+    fireEvent.keyDown(maxBullet, { key: 'ArrowLeft' })
+    expect(maxBullet).toHaveAttribute('aria-valuenow', '99')
+  })
+
+  it('bullets have tabIndex 0 in normal mode', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    screen.getAllByRole('slider').forEach(b => expect(b).toHaveAttribute('tabindex', '0'))
+  })
+
+  it('slider bullets have aria-orientation horizontal', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    screen
+      .getAllByRole('slider')
+      .forEach(b => expect(b).toHaveAttribute('aria-orientation', 'horizontal'))
+  })
+
+  it('ArrowRight moves min bullet to next fixed value index', () => {
+    const vals = [1.99, 5.99, 10.99, 30.99, 50.99, 70.99]
+    render(<Range mode="fixed" values={vals} />)
+    const [minBullet] = screen.getAllByRole('slider')
+    fireEvent.keyDown(minBullet, { key: 'ArrowRight' })
+    expect(minBullet).toHaveAttribute('aria-valuenow', '5.99')
+  })
+
+  it('ArrowLeft moves max bullet to previous fixed value index', () => {
+    const vals = [1.99, 5.99, 10.99, 30.99, 50.99, 70.99]
+    render(<Range mode="fixed" values={vals} />)
+    const [, maxBullet] = screen.getAllByRole('slider')
+    fireEvent.keyDown(maxBullet, { key: 'ArrowLeft' })
+    expect(maxBullet).toHaveAttribute('aria-valuenow', '50.99')
+  })
+})
+
+describe('Range — integrated drag', () => {
+  it('dragging min bullet rightward increases aria-valuenow in normal mode', () => {
+    render(<Range mode="normal" min={1} max={100} />)
+    const [minBullet] = screen.getAllByRole('slider')
+    const track = mockTrackRect(200, 0)
+
+    fireEvent.mouseDown(minBullet)
+    // clientX=100 → 50% of 200px track → value ≈ 50
+    fireEvent.mouseMove(document, { clientX: 100 })
+    fireEvent.mouseUp(document)
+
+    const val = Number(minBullet.getAttribute('aria-valuenow'))
+    expect(val).toBeGreaterThan(1)
+
+    vi.restoreAllMocks()
+    void track
+  })
+
+  it('dragging in fixed mode snaps to a value from the array', async () => {
+    const vals = [1.99, 5.99, 10.99, 30.99, 50.99, 70.99]
+    render(<Range mode="fixed" values={vals} />)
+    const [minBullet] = screen.getAllByRole('slider')
+    const track = mockTrackRect(200, 0)
+
+    fireEvent.mouseDown(minBullet)
+    // clientX=80 → 40% of 200px → index≈2 → 10.99
+    fireEvent.mouseMove(document, { clientX: 80 })
+    fireEvent.mouseUp(document)
+
+    const val = Number(minBullet.getAttribute('aria-valuenow'))
+    expect(vals).toContain(val)
+
+    vi.restoreAllMocks()
+    void track
+  })
+})
+
+describe('Range — a11y (jest-axe)', () => {
+  it('normal mode has no accessibility violations', async () => {
+    const { container } = render(<Range mode="normal" min={1} max={100} />)
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('fixed mode has no accessibility violations', async () => {
+    const { container } = render(
+      <Range mode="fixed" values={[1.99, 5.99, 10.99, 30.99, 50.99, 70.99]} />
+    )
+    expect(await axe(container)).toHaveNoViolations()
   })
 })
